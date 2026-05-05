@@ -4,17 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>מחולל שקופית המלצות ספרייה</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    body{margin:0;background:#e8edf5;font-family:Assistant,Arial,sans-serif;color:#0f172a}
-    .app{max-width:1200px;margin:14px auto;padding:12px;display:grid;gap:10px}
-    .toolbar{display:flex;justify-content:space-between;align-items:center;background:#fff;padding:10px 12px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
-    button{background:#1464b0;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:18px;font-weight:700;cursor:pointer}
-    .hint{font-size:15px;color:#334155}
+    body{margin:0;background:#e8edf5;font-family:'Assistant',Arial,sans-serif}
+    .app{max-width:1200px;margin:12px auto;padding:12px;display:grid;gap:10px}
+    .topbar{display:flex;justify-content:flex-start}
+    button{background:#1464b0;color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:18px;font-weight:700;cursor:pointer;font-family:'Assistant',Arial,sans-serif}
     .scale{width:100%;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;background:#dce5f2;border-radius:12px;overflow:hidden}
     .slide{position:relative;width:1920px;height:1080px;background:#fff;overflow:hidden;transform-origin:center}
-    .pattern{position:absolute;inset:0;background-image:radial-gradient(circle at 20% 20%,rgba(20,100,176,.05) 0 8px,transparent 9px),radial-gradient(circle at 75% 70%,rgba(20,100,176,.05) 0 7px,transparent 8px);background-size:140px 140px,120px 120px}
-    .content{position:absolute;top:85px;left:80px;right:80px;text-align:center}
-    .editable{outline:none;border-radius:8px;padding:6px 12px;display:inline-block}
+    .bg{position:absolute;inset:0;object-fit:cover;width:100%;height:100%;opacity:.18}
+    .content{position:absolute;top:85px;left:80px;right:80px;display:flex;flex-direction:column;align-items:center;z-index:2}
+    .editable{outline:none;border-radius:8px;padding:6px 12px;display:inline-block;text-align:center}
     .editable:focus{box-shadow:0 0 0 4px rgba(20,100,176,.2)}
     .title{margin:0;font-size:79px;font-weight:700;line-height:1.1}
     .subtitle{margin:18px 0 0;font-size:62px;font-weight:400;line-height:1.2}
@@ -30,114 +32,54 @@
 </head>
 <body>
 <div class="app">
-  <div class="toolbar">
-    <button id="downloadBtn">ייצוא HTML</button>
-    <div class="hint">קל לשימוש: לחיצה על הכותרת/כותרת משנה לעריכה, לחיצה על כריכה להעלאה.</div>
-  </div>
-
+  <div class="topbar"><button id="downloadBtn">ייצוא HTML</button></div>
   <div class="scale" id="scaleWrap">
     <div class="slide" id="slide">
-      <div class="pattern"></div>
+      <img class="bg" id="bg" alt="background pattern">
       <div class="content">
         <h1 id="title" class="title editable" contenteditable="true">המלצות הספרנים.ות</h1>
         <h2 id="subtitle" class="subtitle editable" contenteditable="true">סיפורים חזקים</h2>
       </div>
-
       <div class="books" id="books"></div>
       <img class="overlay" id="overlay" alt="decorative overlay">
-      <div class="footer"><img id="logo" class="logo" alt="לוגו הספרייה" title="לחצו כדי להעלות לוגו"/></div>
+      <div class="footer"><img id="logo" class="logo" alt="לוגו הספרייה" title="לחצו כדי להעלות לוגו"></div>
     </div>
   </div>
 </div>
-
 <input id="bookUpload" type="file" accept="image/*">
 <input id="logoUpload" type="file" accept="image/*">
-
 <script>
 (() => {
-  // Paste your provided base64 assets here if needed.
   const ASSETS = {
+    // Replace with your real Base64 assets
+    background: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7dczQAAAAASUVORK5CYII=',
     overlay: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7dczQAAAAASUVORK5CYII=',
     logoWhite: ''
   };
-
-  const state = { covers: ['', '', '', ''], activeIndex: 0, logo: ASSETS.logoWhite };
+  const state = { covers:['','','',''], activeIndex:0, logo:ASSETS.logoWhite };
   const el = {
-    books: document.getElementById('books'),
-    overlay: document.getElementById('overlay'),
-    logo: document.getElementById('logo'),
-    bookUpload: document.getElementById('bookUpload'),
-    logoUpload: document.getElementById('logoUpload'),
-    title: document.getElementById('title'),
-    subtitle: document.getElementById('subtitle'),
-    slide: document.getElementById('slide'),
-    scaleWrap: document.getElementById('scaleWrap'),
-    downloadBtn: document.getElementById('downloadBtn')
+    books:document.getElementById('books'), overlay:document.getElementById('overlay'), bg:document.getElementById('bg'),
+    logo:document.getElementById('logo'), bookUpload:document.getElementById('bookUpload'), logoUpload:document.getElementById('logoUpload'),
+    title:document.getElementById('title'), subtitle:document.getElementById('subtitle'), slide:document.getElementById('slide'),
+    scaleWrap:document.getElementById('scaleWrap'), downloadBtn:document.getElementById('downloadBtn')
   };
-
-  const toDataURL = (file) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-
-  function renderBooks() {
-    el.books.innerHTML = '';
-    for (let i = 0; i < 4; i++) {
-      const slot = document.createElement('div');
-      slot.className = 'book-slot';
-      slot.innerHTML = `<span>לחצו להעלאה</span><img class="book" alt="כריכת ספר ${i+1}">`;
-      const img = slot.querySelector('.book');
-      if (state.covers[i]) { img.src = state.covers[i]; img.style.display = 'block'; slot.querySelector('span').style.display = 'none'; }
-      slot.addEventListener('click', () => { state.activeIndex = i; el.bookUpload.click(); });
-      el.books.appendChild(slot);
-    }
+  const toDataURL = (file)=>new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file);});
+  function renderBooks(){el.books.innerHTML='';for(let i=0;i<4;i++){const slot=document.createElement('div');slot.className='book-slot';slot.innerHTML='<span>לחצו להעלאה</span><img class="book" alt="כריכת ספר">';const img=slot.querySelector('.book');if(state.covers[i]){img.src=state.covers[i];img.style.display='block';slot.querySelector('span').style.display='none';}slot.addEventListener('click',()=>{state.activeIndex=i;el.bookUpload.click();});el.books.appendChild(slot);}}
+  function renderLogo(){if(state.logo){el.logo.src=state.logo;el.logo.style.display='block';}else{el.logo.style.display='none';}}
+  function rescale(){const s=Math.min(el.scaleWrap.clientWidth/1920, el.scaleWrap.clientHeight/1080);el.slide.style.transform=`scale(${s})`;}
+  function cleanText(v){return String(v||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');}
+  function exportHtml(){
+    const books = state.covers.map(c=>`<img class="book" src="${c}" alt="כריכה">`).join('');
+    const html = `<!doctype html><html lang="he" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>שקופית המלצות</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700&display=swap" rel="stylesheet"><style>body{margin:0;background:#111;display:flex;min-height:100vh;align-items:center;justify-content:center;font-family:'Assistant',Arial,sans-serif}.slide{position:relative;width:1920px;height:1080px;background:#fff;overflow:hidden}.bg{position:absolute;inset:0;object-fit:cover;width:100%;height:100%;opacity:.18}.content{position:absolute;top:85px;left:80px;right:80px;display:flex;flex-direction:column;align-items:center;z-index:2}.title{margin:0;font-size:79px;font-weight:700;line-height:1.1;text-align:center}.subtitle{margin:18px 0 0;font-size:62px;font-weight:400;line-height:1.2;text-align:center}.books{position:absolute;top:320px;left:90px;right:90px;display:flex;justify-content:center;gap:28px;z-index:2}.book{width:345px;height:545px;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,.22);object-fit:cover;background:#f1f5f9}.overlay{position:absolute;inset:0;opacity:.5;pointer-events:none;object-fit:cover;z-index:3;width:100%;height:100%}.footer{position:absolute;left:0;right:0;bottom:0;height:170px;background:#1464b0;display:flex;align-items:center;justify-content:flex-start;padding:0 70px;z-index:4}.logo{max-height:95px;max-width:340px;object-fit:contain}</style></head><body><div class="slide"><img class="bg" src="${ASSETS.background}" alt="bg"><div class="content"><h1 class="title">${cleanText(el.title.innerText)}</h1><h2 class="subtitle">${cleanText(el.subtitle.innerText)}</h2></div><div class="books">${books}</div><img class="overlay" src="${ASSETS.overlay}" alt="overlay"><div class="footer">${state.logo?`<img class="logo" src="${state.logo}" alt="לוגו">`:''}</div></div></body></html>`;
+    const blob = new Blob([html],{type:'text/html;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='library-recommendation-slide.html';a.click();URL.revokeObjectURL(a.href);
   }
-
-  function renderLogo() {
-    if (state.logo) { el.logo.src = state.logo; el.logo.style.display = 'block'; }
-    else { el.logo.style.display = 'none'; }
-  }
-
-  function rescale() {
-    const s = Math.min(el.scaleWrap.clientWidth / 1920, el.scaleWrap.clientHeight / 1080);
-    el.slide.style.transform = `scale(${s})`;
-  }
-
-  function cleanText(value) {
-    return String(value || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
-  }
-
-  function buildExportHtml() {
-    const booksHtml = state.covers.map(c => `<img class="book" src="${c}" alt="כריכה">`).join('');
-    return `<!doctype html><html lang="he" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>שקופית המלצות</title><style>body{margin:0;background:#111;display:flex;min-height:100vh;align-items:center;justify-content:center;font-family:Assistant,Arial,sans-serif}.slide{position:relative;width:1920px;height:1080px;background:#fff;overflow:hidden}.pattern{position:absolute;inset:0;background-image:radial-gradient(circle at 20% 20%,rgba(20,100,176,.05) 0 8px,transparent 9px),radial-gradient(circle at 75% 70%,rgba(20,100,176,.05) 0 7px,transparent 8px);background-size:140px 140px,120px 120px}.content{position:absolute;top:85px;left:80px;right:80px;text-align:center}.title{margin:0;font-size:79px;font-weight:700;line-height:1.1}.subtitle{margin:18px 0 0;font-size:62px;font-weight:400;line-height:1.2}.books{position:absolute;top:320px;left:90px;right:90px;display:flex;justify-content:center;gap:28px;z-index:2}.book{width:345px;height:545px;background:#f1f5f9;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,.22);object-fit:cover}.overlay{position:absolute;inset:0;opacity:.5;pointer-events:none;object-fit:cover;z-index:3;width:100%;height:100%}.footer{position:absolute;left:0;right:0;bottom:0;height:170px;background:#1464b0;display:flex;align-items:center;justify-content:flex-start;padding:0 70px}.logo{max-height:95px;max-width:340px;object-fit:contain}</style></head><body><div class="slide"><div class="pattern"></div><div class="content"><h1 class="title">${cleanText(el.title.innerText)}</h1><h2 class="subtitle">${cleanText(el.subtitle.innerText)}</h2></div><div class="books">${booksHtml}</div><img class="overlay" src="${ASSETS.overlay}" alt="overlay"><div class="footer">${state.logo ? `<img class="logo" src="${state.logo}" alt="לוגו">` : ''}</div></div></body></html>`;
-  }
-
-  function download() {
-    const blob = new Blob([buildExportHtml()], { type: 'text/html;charset=utf-8' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'library-recommendation-slide.html';
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }
-
-  el.bookUpload.addEventListener('change', async (e) => {
-    const file = e.target.files[0]; if (!file) return;
-    state.covers[state.activeIndex] = await toDataURL(file);
-    renderBooks(); e.target.value = '';
-  });
-  el.logo.addEventListener('click', () => el.logoUpload.click());
-  el.logoUpload.addEventListener('change', async (e) => {
-    const file = e.target.files[0]; if (!file) return;
-    state.logo = await toDataURL(file); renderLogo(); e.target.value = '';
-  });
-  el.downloadBtn.addEventListener('click', download);
-  window.addEventListener('resize', rescale);
-
-  el.overlay.src = ASSETS.overlay;
-  renderBooks(); renderLogo(); rescale();
+  el.bookUpload.addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;state.covers[state.activeIndex]=await toDataURL(f);renderBooks();e.target.value='';});
+  el.logo.addEventListener('click',()=>el.logoUpload.click());
+  el.logoUpload.addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;state.logo=await toDataURL(f);renderLogo();e.target.value='';});
+  el.downloadBtn.addEventListener('click',exportHtml);
+  window.addEventListener('resize',rescale);
+  el.bg.src=ASSETS.background; el.overlay.src=ASSETS.overlay;
+  renderBooks();renderLogo();rescale();
 })();
 </script>
 </body>
