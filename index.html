@@ -21,8 +21,6 @@
     .title{margin:0;font-size:79px;font-weight:700;line-height:1.1}
     .subtitle{margin:18px 0 0;font-size:62px;font-weight:400;line-height:1.2}
     .books{position:absolute;top:320px;left:90px;right:90px;display:flex;justify-content:center;gap:28px;z-index:2}
-    .books-overlay-wrap{position:absolute;top:320px;left:90px;right:90px;height:545px;z-index:3;pointer-events:none}
-    
     .book-slot{width:345px;height:545px;border-radius:0;box-shadow:0 8px 20px rgba(0,0,0,.22);overflow:hidden;background:#f1f5f9;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative}
     .book-slot span{font-size:34px;color:#64748b;pointer-events:none}
     .book{width:100%;height:100%;object-fit:cover;display:none}
@@ -43,7 +41,6 @@
         <h2 id="subtitle" class="subtitle editable" contenteditable="true">סיפורים חזקים</h2>
       </div>
       <div class="books" id="books"></div>
-      <div class="books-overlay-wrap"><img class="overlay" id="overlay" alt="decorative overlay"></div>
       <div class="footer"><img id="logo" class="logo" alt="לוגו הספרייה" title="לחצו כדי להעלות לוגו"><button id="logoUploadPlaceholder" class="logo-upload-placeholder" type="button">העלאת לוגו</button></div>
     </div>
   </div>
@@ -59,21 +56,20 @@
   };
   const state = { covers:['','','',''], activeIndex:0, logo:ASSETS.logoWhite };
   const el = {
-    books:document.getElementById('books'), overlay:document.getElementById('overlay'), bg:document.getElementById('bg'),
+    books:document.getElementById('books'), bg:document.getElementById('bg'),
     logo:document.getElementById('logo'), bookUpload:document.getElementById('bookUpload'), logoUpload:document.getElementById('logoUpload'),
     title:document.getElementById('title'), subtitle:document.getElementById('subtitle'), slide:document.getElementById('slide'),
     scaleWrap:document.getElementById('scaleWrap'), downloadBtn:document.getElementById('downloadBtn'), logoUploadPlaceholder:document.getElementById('logoUploadPlaceholder')
   };
   const toDataURL = (file)=>new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file);});
-  function renderBooks(){el.books.innerHTML='';for(let i=0;i<4;i++){const slot=document.createElement('div');slot.className='book-slot';slot.innerHTML='<span>לחצו להעלאה</span><img class="book" alt="כריכת ספר">';const img=slot.querySelector('.book');if(state.covers[i]){img.src=state.covers[i];img.style.display='block';slot.querySelector('span').style.display='none';}slot.addEventListener('click',()=>{state.activeIndex=i;el.bookUpload.click();});el.books.appendChild(slot);}}
+  function renderBooks(){el.books.innerHTML='';for(let i=0;i<4;i++){const slot=document.createElement('div');slot.className='book-slot';slot.innerHTML='<span>לחצו להעלאה</span><img class="book" alt="כריכת ספר"><img class="overlay" src="'+ASSETS.overlay+'" alt="overlay">';const img=slot.querySelector('.book');if(state.covers[i]){img.src=state.covers[i];img.style.display='block';slot.querySelector('span').style.display='none';}slot.addEventListener('click',()=>{state.activeIndex=i;el.bookUpload.click();});el.books.appendChild(slot);}}
   function renderLogo(){if(state.logo){el.logo.src=state.logo;el.logo.style.display='block';el.logoUploadPlaceholder.style.display='none';}else{el.logo.style.display='none';el.logoUploadPlaceholder.style.display='block';}}
   function rescale(){const s=Math.min(el.scaleWrap.clientWidth/1920, el.scaleWrap.clientHeight/1080);el.slide.style.transform=`scale(${s})`;}
   function cleanText(v){return String(v||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');}
   function exportHtml(){
-    const books = state.covers.map(c=>`<img class="book" src="${c}" alt="כריכה">`).join('');
+    const books = state.covers.map(c=>`<div class="book-wrap"><img class="book" src="${c}" alt="כריכה"><img class="overlay" src="${ASSETS.overlay}" alt="overlay"></div>`).join('');
     const html = `<!doctype html><html lang="he" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>שקופית המלצות</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700&display=swap" rel="stylesheet"><style>body{margin:0;background:#111;display:flex;min-height:100vh;align-items:center;justify-content:center;font-family:'Assistant',Arial,sans-serif}.slide{position:relative;width:1920px;height:1080px;background:#fff;overflow:hidden}.bg{position:absolute;inset:0;object-fit:cover;width:100%;height:100%;opacity:1}.content{position:absolute;top:85px;left:80px;right:80px;display:flex;flex-direction:column;align-items:center;z-index:2}.title{margin:0;font-size:79px;font-weight:700;line-height:1.1;text-align:center}.subtitle{margin:18px 0 0;font-size:62px;font-weight:400;line-height:1.2;text-align:center}.books{position:absolute;top:320px;left:90px;right:90px;display:flex;justify-content:center;gap:28px;z-index:2}
-    .books-overlay-wrap{position:absolute;top:320px;left:90px;right:90px;height:545px;z-index:3;pointer-events:none}
-    .book{width:345px;height:545px;border-radius:0;box-shadow:0 8px 20px rgba(0,0,0,.22);object-fit:cover;background:#f1f5f9}.overlay{position:absolute;inset:0;opacity:.5;pointer-events:none;object-fit:cover;z-index:3;width:100%;height:100%}.footer{position:absolute;left:0;right:0;bottom:0;height:170px;background:#1464b0;z-index:4}.logo{position:absolute;right:70px;top:50%;transform:translateY(-50%);max-height:95px;max-width:340px;object-fit:contain}</style></head><body><div class="slide"><img class="bg" src="${ASSETS.background}" alt="bg"><div class="content"><h1 class="title">${cleanText(el.title.innerText)}</h1><h2 class="subtitle">${cleanText(el.subtitle.innerText)}</h2></div><div class="books">${books}</div><div class="books-overlay-wrap"><img class="overlay" src="${ASSETS.overlay}" alt="overlay"></div><div class="footer">${state.logo?`<img class="logo" src="${state.logo}" alt="לוגו">`:''}</div></div></body></html>`;
+    .book-wrap{position:relative;width:345px;height:545px}.book{width:345px;height:545px;border-radius:0;box-shadow:0 8px 20px rgba(0,0,0,.22);object-fit:cover;background:#f1f5f9}.overlay{position:absolute;inset:0;opacity:.5;pointer-events:none;object-fit:cover;z-index:3;width:100%;height:100%}.footer{position:absolute;left:0;right:0;bottom:0;height:170px;background:#1464b0;z-index:4}.logo{position:absolute;right:70px;top:50%;transform:translateY(-50%);max-height:95px;max-width:340px;object-fit:contain}</style></head><body><div class="slide"><img class="bg" src="${ASSETS.background}" alt="bg"><div class="content"><h1 class="title">${cleanText(el.title.innerText)}</h1><h2 class="subtitle">${cleanText(el.subtitle.innerText)}</h2></div><div class="books">${books}</div><div class="footer">${state.logo?`<img class="logo" src="${state.logo}" alt="לוגו">`:''}</div></div></body></html>`;
     const blob = new Blob([html],{type:'text/html;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='library-recommendation-slide.html';a.click();URL.revokeObjectURL(a.href);
   }
   el.bookUpload.addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;state.covers[state.activeIndex]=await toDataURL(f);renderBooks();e.target.value='';});
@@ -82,7 +78,7 @@
   el.logoUpload.addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;state.logo=await toDataURL(f);renderLogo();e.target.value='';});
   el.downloadBtn.addEventListener('click',exportHtml);
   window.addEventListener('resize',rescale);
-  el.bg.src=ASSETS.background; el.overlay.src=ASSETS.overlay;
+  el.bg.src=ASSETS.background;
   renderBooks();renderLogo();rescale();
 })();
 </script>
