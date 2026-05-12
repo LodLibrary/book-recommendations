@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>עמדת חיפוש ספרייה</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--blue:#2956AA;--white:#fff;--ink:#0f2146;--line:#1c4491;}
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;font-family:'Assistant',Arial,sans-serif;background:var(--blue);color:var(--white)}
+    .kiosk{width:100vw;height:100vh;overflow:hidden;background:var(--blue)}
+    .screen{display:none;width:100%;height:100%;padding:34px 42px;grid-template-rows:auto 1fr auto;gap:20px}
+    .screen.active{display:grid}
+    .header{display:flex;justify-content:space-between;align-items:center;border-bottom:4px solid var(--white);padding-bottom:14px}
+    .brand{font-size:34px;font-weight:800;letter-spacing:.3px}
+    .subbrand{font-size:20px;font-weight:600;opacity:.9}
+    .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:28px;align-items:stretch}
+    .hero-main{background:var(--white);color:var(--ink);padding:36px;border:4px solid var(--white)}
+    .hero-title{font-size:72px;line-height:1.02;margin:0 0 18px;font-weight:800}
+    .hero-help{font-size:30px;line-height:1.25;margin:0 0 22px;font-weight:600;color:#213e79}
+    .search-type{display:flex;gap:0;margin-bottom:16px}
+    .type-btn{flex:1;height:78px;border:4px solid var(--blue);background:#dce6ff;color:#17326b;font-size:34px;font-weight:800;cursor:pointer}
+    .type-btn.active{background:var(--blue);color:#fff}
+    .search-row{display:flex;gap:0}
+    .search-input{flex:1;height:110px;border:4px solid var(--blue);font-size:44px;padding:0 20px;font-weight:600}
+    .search-input:focus{outline:none;background:#f3f7ff}
+    .search-btn{width:250px;height:110px;border:4px solid var(--blue);background:var(--blue);color:#fff;font-size:44px;font-weight:800;cursor:pointer}
+    .search-btn:active,.action:active,.type-btn:active{filter:brightness(.9)}
+    .hero-side{display:grid;grid-template-rows:1fr 1fr;gap:18px}
+    .panel{border:4px solid #fff;padding:20px;background:transparent}
+    .panel h3{margin:0 0 10px;font-size:36px}
+    .panel p{margin:0;font-size:28px;line-height:1.3}
+    .footer{display:flex;justify-content:space-between;align-items:center;border-top:4px solid #fff;padding-top:12px;font-size:26px}
+
+    .results-layout{display:grid;grid-template-columns:380px 1fr;gap:18px;height:100%}
+    .filters{border:4px solid #fff;padding:16px}
+    .filters h2{margin:0 0 10px;font-size:40px}
+    .filters .action{width:100%;margin-bottom:10px}
+    .results-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;overflow:auto;padding-left:4px}
+    .result{display:grid;grid-template-columns:140px 1fr;gap:14px;border:4px solid #fff;background:#fff;color:var(--ink);padding:10px}
+    .cover{width:140px;height:200px;background:#aebfe6;border:2px solid #274f9f;display:flex;align-items:center;justify-content:center;color:#163067;font-weight:700}
+    .meta h3{margin:0 0 8px;font-size:34px;line-height:1.05}
+    .meta p{margin:0 0 4px;font-size:24px}
+    .actions{display:flex;gap:8px;margin-top:8px}
+
+    .detail-layout{display:grid;grid-template-columns:320px 1fr;gap:18px;height:100%}
+    .big-cover{border:4px solid #fff;background:#d5e0fb;display:flex;align-items:center;justify-content:center;color:#1f4288;font-weight:700;font-size:28px}
+    .sections{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;overflow:auto}
+    .section{background:#fff;color:var(--ink);border:4px solid #fff;padding:14px}
+    .section h4{font-size:33px;margin:0 0 10px}
+    .section p{font-size:24px;line-height:1.35;margin:0}
+    .action{height:72px;border:4px solid #fff;background:var(--blue);color:#fff;font-size:30px;font-weight:800;cursor:pointer;padding:0 18px}
+    .action.white{background:#fff;color:var(--blue);border-color:var(--blue)}
+    button:focus-visible,input:focus-visible{outline:5px solid #ffd24b;outline-offset:2px}
+  </style>
+</head>
+<body>
+<div class="kiosk">
+  <section id="home" class="screen active">
+    <header class="header"><div class="brand">ספריית לוד</div><div class="subbrand">עמדת חיפוש עצמי</div></header>
+    <div class="hero">
+      <div class="hero-main">
+        <h1 class="hero-title">חיפוש בקטלוג הספרייה</h1>
+        <p class="hero-help">הקלידו מילה אחת או יותר, בחרו סוג חיפוש ולחצו “חיפוש”.</p>
+        <div class="search-type" id="types"></div>
+        <div class="search-row">
+          <input id="q" class="search-input" placeholder="מה נחפש היום?" />
+          <button class="search-btn" id="search">חיפוש</button>
+        </div>
+      </div>
+      <div class="hero-side">
+        <div class="panel"><h3>מה אפשר למצוא כאן?</h3><p>ספרים, ספרי ילדים, עיון, קומיקס, שפות ועוד.</p></div>
+        <div class="panel"><h3>טיפ מהיר</h3><p>לא בטוחים בשם הספר? נסו לפי מחבר/ת או נושא.</p></div>
+      </div>
+    </div>
+    <footer class="footer"><span>מסך מגע • נגיש ופשוט לשימוש</span><span>שעות פתיחה: א׳–ה׳ 09:00–19:00</span></footer>
+  </section>
+
+  <section id="results" class="screen">
+    <header class="header"><div class="brand">תוצאות חיפוש</div><button class="action white" data-go="home">חזרה לחיפוש</button></header>
+    <div class="results-layout">
+      <aside class="filters">
+        <h2 id="qLabel">תוצאות</h2>
+        <button class="action" id="refine">שנו סוג חיפוש</button>
+        <button class="action" id="newSearch">חיפוש חדש</button>
+      </aside>
+      <main class="results-grid" id="resultsGrid"></main>
+    </div>
+    <footer class="footer"><span id="countLabel"></span><span>הקישו על “פרטים” כדי לפתוח כותר</span></footer>
+  </section>
+
+  <section id="detail" class="screen">
+    <header class="header"><div class="brand">כרטיס ספר</div><button class="action white" data-go="results">חזרה לתוצאות</button></header>
+    <div class="detail-layout">
+      <div class="big-cover" id="detailCover">כריכה</div>
+      <div class="sections" id="detailSections"></div>
+    </div>
+    <footer class="footer"><span>בחרו פעולה להמשך</span><div><button class="action">שמירה לרשימה</button> <button class="action">מיקום על מפה</button></div></footer>
+  </section>
+</div>
+<script>
+const TYPES=['כותר','מחבר/ת','נושא'];
+let activeType=0;
+const BOOKS=[
+  {title:'לבד בברלין',author:'הנס פלאדה',year:'2016',shelf:'ספרות מתורגמת',classi:'833 FAL',desc:'דרמה היסטורית על התנגדות שקטה בברלין.',copies:'3 זמינים, 1 מושאל'},
+  {title:'האי ברחוב הציפורים',author:'אורי אורלב',year:'1981',shelf:'נוער',classi:'892.4 ORL',desc:'סיפור הישרדות מרגש בתקופת השואה.',copies:'2 זמינים'},
+  {title:'קיצור תולדות האנושות',author:'יובל נח הררי',year:'2011',shelf:'עיון כללי',classi:'909 HAR',desc:'מסע רחב בהיסטוריה של המין האנושי.',copies:'1 זמין, 2 מושאלים'},
+  {title:'חלומות מפלסטיק',author:'גלילה רון־פדר',year:'2018',shelf:'נוער בוגר',classi:'892.4 RON',desc:'רומן עדכני על זהות והתבגרות.',copies:'4 זמינים'}
+];
+
+const typesEl=document.getElementById('types');
+TYPES.forEach((t,i)=>{const b=document.createElement('button');b.className='type-btn'+(i===0?' active':'');b.textContent=t;b.onclick=()=>{activeType=i;document.querySelectorAll('.type-btn').forEach((x,ix)=>x.classList.toggle('active',ix===i));};typesEl.appendChild(b);});
+
+function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function renderResults(q=''){document.getElementById('qLabel').textContent=`תוצאות עבור: ${q||'כל הקטלוג'}`;const g=document.getElementById('resultsGrid');g.innerHTML='';BOOKS.forEach((b,ix)=>{const row=document.createElement('article');row.className='result';row.innerHTML=`<div class="cover">כריכה</div><div class="meta"><h3>${b.title}</h3><p><strong>מחבר/ת:</strong> ${b.author}</p><p><strong>שנה:</strong> ${b.year}</p><p><strong>מדף:</strong> ${b.shelf}</p><p><strong>מיון:</strong> ${b.classi}</p><div class="actions"><button class="action" data-detail="${ix}">פרטים</button><button class="action white">איתור במדף</button></div></div>`;g.appendChild(row);});
+  document.getElementById('countLabel').textContent=`נמצאו ${BOOKS.length} כותרים`;
+}
+function renderDetail(ix){const b=BOOKS[ix];document.getElementById('detailCover').textContent=b.title;document.getElementById('detailSections').innerHTML=`
+  <section class="section"><h4>פרטי הספר</h4><p><strong>${b.title}</strong><br>סיווג: ${b.classi}</p></section>
+  <section class="section"><h4>מחבר/ת ופרסום</h4><p>${b.author}<br>שנת פרסום: ${b.year}</p></section>
+  <section class="section"><h4>מיקום בספרייה</h4><p>אזור: ${b.shelf}<br>איתור מהיר לפי סיווג: ${b.classi}</p></section>
+  <section class="section"><h4>תיאור</h4><p>${b.desc}</p></section>
+  <section class="section"><h4>עותקים</h4><p>${b.copies}</p></section>`;
+}
+
+document.getElementById('search').onclick=()=>{const q=document.getElementById('q').value.trim();renderResults(q);go('results');};
+document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('search').click();});
+document.getElementById('resultsGrid').addEventListener('click',e=>{const btn=e.target.closest('[data-detail]');if(!btn)return;renderDetail(Number(btn.dataset.detail));go('detail');});
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
+document.getElementById('newSearch').onclick=()=>go('home');
+document.getElementById('refine').onclick=()=>go('home');
+</script>
+</body>
+</html>
